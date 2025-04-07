@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Conversor de Arquivos</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --info-color: #17a2b8;
+            --warning-color: #ffc107;
+            --light-bg: #f8f9fa;
+            --dark-text: #343a40;
+            --light-text: #ffffff;
+            --border-color: #dee2e6;
+            --hover-primary: #0056b3;
+            --hover-light: #e2e6ea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0; /* Removido padding do body para footer ficar na borda */
+            background-color: #e9ecef;
+            color: var(--dark-text);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column; /* Para empilhar container e footer */
+            min-height: 100vh; /* Garante que o footer fique no fim */
+        }
+
+        .main-content {
+             flex: 1; /* Faz o conteúdo principal ocupar o espaço disponível */
+             display: flex;
+             justify-content: center;
+             align-items: flex-start;
+             padding: 20px; /* Padding movido para cá */
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            /* margin: 20px; Removido, padding no pai agora */
+            padding: 30px;
+            background-color: var(--light-text);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative; /* Para posicionar o seletor de idioma */
+        }
+
+         .language-selector {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+         }
+
+         .language-selector label {
+             display: none; /* Oculta label visualmente */
+         }
+
+         .language-selector select {
+             padding: 5px 8px;
+             border-radius: 4px;
+             border: 1px solid var(--border-color);
+             background-color: var(--light-bg);
+             font-size: 0.85rem;
+             cursor: pointer;
+         }
+
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+            margin-top: 10px; /* Ajuste para dar espaço ao seletor de idioma */
+            font-weight: 600;
+        }
+
+        .step {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--light-bg);
+        }
+
+        .step-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        label, select, input[type="file"] {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"], select:not(#languageSelect) { /* Exclui select de idioma do estilo principal */
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--light-text);
+            font-size: 1rem;
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+        }
+
+         input[type="file"]::file-selector-button {
+            padding: 10px 15px;
+            margin-right: 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--secondary-color);
+            color: var(--light-text);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+         }
+          input[type="file"]::file-selector-button:hover {
+             background-color: #5a6268;
+          }
+
+
+        button#convertButton {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--light-text);
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 15px;
+        }
+
+        button#convertButton:hover {
+            background-color: var(--hover-primary);
+            transform: translateY(-1px);
+        }
+         button#convertButton:active {
+             transform: translateY(0px);
+         }
+
+        #status {
+            margin-top: 25px;
+            font-weight: 500;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+        }
+
+        /* Classes de Status */
+        .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: block; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; display: block; }
+        .status-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; display: block; }
+        .status-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; display: block; }
+
+        .persistent-warning { /* Estilo para o aviso fixo */
+             background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba;
+             margin-bottom: 20px;
+             padding: 15px;
+             border-radius: 6px;
+        }
+
+        .notes {
+             font-size: 0.85rem;
+             color: var(--secondary-color);
+             margin-top: 5px;
+         }
+
+         footer {
+            text-align: center;
+            padding: 15px;
+            margin-top: 20px; /* Espaço acima do footer */
+            background-color: var(--dark-text);
+            color: var(--light-bg);
+            font-size: 0.9rem;
+         }
+
+         footer a { /* Se adicionar links no futuro */
+            color: var(--primary-color);
+            text-decoration: none;
+         }
+          footer a:hover {
+             text-decoration: underline;
+          }
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+</head>
+<body>
+
+<div class="main-content">
+    <div class="container">
+        <div class="language-selector">
+            <label for="languageSelect">Idioma:</label>
+            <select id="languageSelect">
+                <option value="pt-BR">🇧🇷 Português</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="es">🇪🇸 Español</option>
+            </select>
+        </div>
+
+        <h1 data-translate-key="mainTitle">Super Conversor de Arquivos</h1>
+
+        <div class="persistent-warning">
+            <strong data-translate-key="warningTitle">Aviso:</strong> <span data-translate-key="warningText">Conversões de/para Parquet não são suportadas. A conversão *de* XML para tabela é limitada a estruturas simples. A escrita de DBF não está habilitada.</span>
+        </div>
+
+        <div class="step">
+            <label for="inputFile" class="step-label" data-translate-key="step1Label">Passo 1: Selecione o Arquivo de Entrada</label>
+            <input type="file" id="inputFile" accept=".csv,.xlsx,.json,.ods,.dbf,.slk,.tsv,.xml,.yaml,.yml,.html">
+             <div class="notes" data-translate-key="step1Notes">Formatos suportados para leitura: CSV, XLSX, JSON (array de objetos/arrays), ODS, DBF, SLK, TSV, YAML (lista), HTML (tabela simples), XML (lista simples).</div>
+        </div>
+
+        <div class="step">
+            <label for="outputFormat" class="step-label" data-translate-key="step2Label">Passo 2: Escolha o Formato de Saída</label>
+            <select id="outputFormat">
+                <option value="csv" data-translate-key="formatCSV">CSV (.csv)</option>
+                <option value="xlsx" data-translate-key="formatXLSX">XLSX (.xlsx - Excel)</option>
+                <option value="json" data-translate-key="formatJSON">JSON (.json - Array de Objetos)</option>
+                <option value="ods" data-translate-key="formatODS">ODS (.ods - LibreOffice Calc)</option>
+                <option value="html" data-translate-key="formatHTML">HTML (.html - Tabela Simples)</option>
+                <option value="tsv" data-translate-key="formatTSV">TSV (.tsv - Valores Separados por Tab)</option>
+                <option value="xml" data-translate-key="formatXML">XML (.xml - Estrutura Simples)</option>
+                <option value="yaml" data-translate-key="formatYAML">YAML (.yaml - Lista Simples)</option>
+                <option value="slk" data-translate-key="formatSLK">SYLK (.slk)</option>
+            </select>
+             <div class="notes" data-translate-key="step2Notes">O arquivo convertido será baixado automaticamente.</div>
+        </div>
+
+        <button id="convertButton" data-translate-key="convertButton">Passo 3: Converter e Baixar!</button>
+
+        <div id="status"></div>
+    </div>
+</div> <footer data-translate-key="footerText">
+    Criado por Matheus Henrique Ribeiro Leite - 2025
+</footer>
+
+<script>
+    const inputFile = document.getElementById('inputFile');
+    const outputFormatSelect = document.getElementById('outputFormat');
+    const convertButton = document.getElementById('convertButton');
+    const statusDiv = document.getElementById('status');
+    const languageSelect = document.getElementById('languageSelect');
+
+    // --- Lógica de Internacionalização (i18n) ---
+
+    const translations = {
+        'pt-BR': {
+            pageTitle: "Super Conversor de Arquivos",
+            mainTitle: "Super Conversor de Arquivos 🚀",
+            warningTitle: "Aviso:",
+            warningText: "Conversões de/para Parquet não são suportadas. A conversão *de* XML para tabela é limitada a estruturas simples. A escrita de DBF não está habilitada.",
+            step1Label: "Passo 1: Selecione o Arquivo de Entrada",
+            step1Notes: "Formatos suportados para leitura: CSV, XLSX, JSON (array de objetos/arrays), ODS, DBF, SLK, TSV, YAML (lista), HTML (tabela simples), XML (lista simples).",
+            step2Label: "Passo 2: Escolha o Formato de Saída",
+            step2Notes: "O arquivo convertido será baixado automaticamente.",
+            formatCSV: "CSV (.csv)",
+            formatXLSX: "XLSX (.xlsx - Excel)",
+            formatJSON: "JSON (.json - Array de Objetos)",
+            formatODS: "ODS (.ods - LibreOffice Calc)",
+            formatHTML: "HTML (.html - Tabela Simples)",
+            formatTSV: "TSV (.tsv - Valores Separados por Tab)",
+            formatXML: "XML (.xml - Estrutura Simples)",
+            formatYAML: "YAML (.yaml - Lista Simples)",
+            formatSLK: "SYLK (.slk)",
+            convertButton: "Passo 3: Converter e Baixar!",
+            footerText: "Criado por Matheus Henrique Ribeiro Leite - 2025",
+            // Status Messages
+            statusSelectFile: "Por favor, selecione um arquivo primeiro.",
+            statusReading: "Lendo o arquivo...",
+            statusProcessingYAML: "Processando YAML...",
+            statusProcessingJSON: "Processando JSON...",
+            statusReadingXML: "Lendo XML (leitura limitada)...",
+            statusProcessingGeneric: "Processando {format}...", // {format} será substituído
+            statusXMLReadDOM: "XML lido com parsing DOM básico (pode haver perda de dados).",
+            statusConvertingTo: "Convertendo para {format}...",
+            statusComplete: "Conversão para {format} concluída! Download iniciado.",
+            statusErrorGeneric: "Erro: {message}. Verifique o formato e conteúdo do arquivo.",
+            statusErrorYAMLStructure: "Estrutura YAML não é um array. Necessário array de objetos/arrays para conversão tabular.",
+            statusErrorJSONStructure: "Estrutura JSON não é um array. Necessário array de objetos/arrays para conversão tabular.",
+            statusErrorNoSheet: "Não foi possível encontrar nenhuma planilha/dados tabulares no arquivo.",
+            statusErrorSheetEmpty: "A planilha/dados parecem estar vazios ou em formato não reconhecido.",
+            statusErrorXMLTable: "Não foi possível extrair dados tabulares do XML.",
+             statusErrorXMLTableSimple: "Estrutura XML não reconhecida para conversão tabular simples.",
+             statusErrorXMLProcess: "Não foi possível processar o arquivo XML como tabela. {subMessage}",
+            statusErrorReadText: "Erro ao ler o arquivo como texto.",
+            statusErrorReadBuffer: "Erro ao ler o arquivo como ArrayBuffer.",
+            statusErrorPrepareData: "Erro ao preparar dados para conversão: {message}",
+             statusErrorOutputFormat: "Formato de saída '{format}' não suportado.",
+             statusErrorOutputConversion: "Erro ao converter para {format}: {message}",
+        },
+        'en': {
+            pageTitle: "Super File Converter",
+            mainTitle: "Super File Converter 🚀",
+            warningTitle: "Warning:",
+            warningText: "Parquet conversions (to/from) are not supported. XML to table conversion is limited to simple structures. DBF writing is disabled.",
+            step1Label: "Step 1: Select Input File",
+            step1Notes: "Supported input formats: CSV, XLSX, JSON (array of objects/arrays), ODS, DBF, SLK, TSV, YAML (list), HTML (simple table), XML (simple list).",
+            step2Label: "Step 2: Choose Output Format",
+            step2Notes: "The converted file will be downloaded automatically.",
+            formatCSV: "CSV (.csv)",
+            formatXLSX: "XLSX (.xlsx - Excel)",
+            formatJSON: "JSON (.json - Array of Objects)",
+            formatODS: "ODS (.ods - LibreOffice Calc)",
+            formatHTML: "HTML (.html - Simple Table)",
+            formatTSV: "TSV (.tsv - Tab Separated Values)",
+            formatXML: "XML (.xml - Simple Structure)",
+            formatYAML: "YAML (.yaml - Simple List)",
+            formatSLK: "SYLK (.slk)",
+            convertButton: "Step 3: Convert and Download!",
+            footerText: "Created by Matheus Henrique Ribeiro Leite - 2025",
+             // Status Messages
+             statusSelectFile: "Please select a file first.",
+             statusReading: "Reading file...",
+             statusProcessingYAML: "Processing YAML...",
+             statusProcessingJSON: "Processing JSON...",
+             statusReadingXML: "Reading XML (limited read)...",
+             statusProcessingGeneric: "Processing {format}...",
+             statusXMLReadDOM: "XML read using basic DOM parsing (data loss may occur).",
+             statusConvertingTo: "Converting to {format}...",
+             statusComplete: "Conversion to {format} complete! Download started.",
+             statusErrorGeneric: "Error: {message}. Check file format and content.",
+             statusErrorYAMLStructure: "YAML structure is not an array. Array of objects/arrays required for tabular conversion.",
+             statusErrorJSONStructure: "JSON structure is not an array. Array of objects/arrays required for tabular conversion.",
+             statusErrorNoSheet: "Could not find any worksheet/tabular data in the file.",
+             statusErrorSheetEmpty: "The worksheet/data seems empty or in an unrecognized format.",
+            statusErrorXMLTable: "Could not extract tabular data from XML.",
+             statusErrorXMLTableSimple: "XML structure not recognized for simple tabular conversion.",
+             statusErrorXMLProcess: "Could not process the XML file as a table. {subMessage}",
+             statusErrorReadText: "Error reading file as text.",
+             statusErrorReadBuffer: "Error reading file as ArrayBuffer.",
+             statusErrorPrepareData: "Error preparing data for conversion: {message}",
+             statusErrorOutputFormat: "Output format '{format}' not supported.",
+             statusErrorOutputConversion: "Error converting to {format}: {message}",
+        },
+        'es': {
+            pageTitle: "Super Convertidor de Archivos",
+            mainTitle: "Super Convertidor de Archivos 🚀",
+            warningTitle: "Aviso:",
+            warningText: "Las conversiones a/desde Parquet no están soportadas. La conversión *de* XML a tabla está limitada a estructuras simples. La escritura de DBF está deshabilitada.",
+            step1Label: "Paso 1: Seleccione el Archivo de Entrada",
+            step1Notes: "Formatos soportados para lectura: CSV, XLSX, JSON (array de objetos/arrays), ODS, DBF, SLK, TSV, YAML (lista), HTML (tabla simple), XML (lista simple).",
+            step2Label: "Paso 2: Elija el Formato de Salida",
+            step2Notes: "El archivo convertido se descargará automáticamente.",
+            formatCSV: "CSV (.csv)",
+            formatXLSX: "XLSX (.xlsx - Excel)",
+            formatJSON: "JSON (.json - Array de Objetos)",
+            formatODS: "ODS (.ods - LibreOffice Calc)",
+            formatHTML: "HTML (.html - Tabla Simple)",
+            formatTSV: "TSV (.tsv - Valores Separados por Tabulador)",
+            formatXML: "XML (.xml - Estructura Simple)",
+            formatYAML: "YAML (.yaml - Lista Simple)",
+            formatSLK: "SYLK (.slk)",
+            convertButton: "Paso 3: ¡Convertir y Descargar!",
+            footerText: "Creado por Matheus Henrique Ribeiro Leite - 2025",
+             // Status Messages
+             statusSelectFile: "Por favor, seleccione un archivo primero.",
+             statusReading: "Leyendo archivo...",
+             statusProcessingYAML: "Procesando YAML...",
+             statusProcessingJSON: "Procesando JSON...",
+             statusReadingXML: "Leyendo XML (lectura limitada)...",
+             statusProcessingGeneric: "Procesando {format}...",
+             statusXMLReadDOM: "XML leído con análisis DOM básico (puede haber pérdida de datos).",
+             statusConvertingTo: "Convirtiendo a {format}...",
+             statusComplete: "¡Conversión a {format} completada! Descarga iniciada.",
+             statusErrorGeneric: "Error: {message}. Verifique el formato y contenido del archivo.",
+             statusErrorYAMLStructure: "La estructura YAML no es un array. Se requiere array de objetos/arrays para conversión tabular.",
+             statusErrorJSONStructure: "La estructura JSON no es un array. Se requiere array de objetos/arrays para conversión tabular.",
+             statusErrorNoSheet: "No se pudo encontrar ninguna hoja de cálculo/datos tabulares en el archivo.",
+             statusErrorSheetEmpty: "La hoja de cálculo/datos parecen estar vacíos o en un formato no reconocido.",
+            statusErrorXMLTable: "No se pudieron extraer datos tabulares del XML.",
+             statusErrorXMLTableSimple: "Estructura XML no reconocida para conversión tabular simple.",
+             statusErrorXMLProcess: "No se pudo procesar el archivo XML como tabla. {subMessage}",
+             statusErrorReadText: "Error al leer el archivo como texto.",
+             statusErrorReadBuffer: "Error al leer el archivo como ArrayBuffer.",
+             statusErrorPrepareData: "Error al preparar los datos para la conversión: {message}",
+             statusErrorOutputFormat: "Formato de salida '{format}' no soportado.",
+             statusErrorOutputConversion: "Error al convertir a {format}: {message}",
+        }
+    };
+
+    let currentLang = 'pt-BR'; // Default language
+
+    function setLanguage(lang) {
+        if (!translations[lang]) {
+            console.warn(`Language ${lang} not found, defaulting to pt-BR.`);
+            lang = 'pt-BR';
+        }
+        currentLang = lang;
+        localStorage.setItem('preferredLanguage', lang); // Save preference
+        document.documentElement.lang = lang.split('-')[0]; // Set html lang attribute (e.g., 'pt', 'en', 'es')
+
+        // Update all elements with data-translate-key
+        document.querySelectorAll('[data-translate-key]').forEach(element => {
+            const key = element.getAttribute('data-translate-key');
+            if (translations[lang][key]) {
+                // Special handling for options (change text, keep value)
+                if (element.tagName === 'OPTION') {
+                     element.textContent = translations[lang][key];
+                } else {
+                    // Use innerHTML for keys that might contain simple HTML like <strong>
+                     if (key === 'warningText') {
+                         element.innerHTML = translations[lang][key];
+                     } else {
+                         element.textContent = translations[lang][key];
+                     }
+                }
+            } else {
+                console.warn(`Translation key "${key}" not found for language "${lang}"`);
+            }
+        });
+
+        // Update page title
+        document.title = translations[lang]['pageTitle'] || translations['pt-BR']['pageTitle'];
+
+        // Update language selector value
+         languageSelect.value = lang;
+
+         // Clear status message on language change
+         statusDiv.style.display = 'none';
+         statusDiv.textContent = '';
+    }
+
+     // Get translated status message
+     function getStatusMessage(key, params = {}) {
+         let message = translations[currentLang]?.[key] || translations['pt-BR'][key] || key; // Fallback chain
+         // Replace placeholders like {format} or {message}
+         for (const paramKey in params) {
+             message = message.replace(`{${paramKey}}`, params[paramKey]);
+         }
+         return message;
+     }
+
+     // --- Fim da Lógica de Internacionalização ---
+
+    // Event listener para o seletor de idioma
+    languageSelect.addEventListener('change', (event) => {
+        setLanguage(event.target.value);
+    });
+
+     // Inicialização do Idioma
+     function initializeLanguage() {
+         const savedLang = localStorage.getItem('preferredLanguage');
+         const browserLang = navigator.language || navigator.userLanguage; // pt-BR, en-US, es-ES etc.
+
+         if (savedLang && translations[savedLang]) {
+             setLanguage(savedLang);
+         } else if (browserLang) {
+              if (translations[browserLang]) { // Exact match (e.g., pt-BR)
+                  setLanguage(browserLang);
+              } else if (translations[browserLang.split('-')[0]]) { // Base match (e.g., en)
+                   setLanguage(browserLang.split('-')[0]);
+              } else {
+                  setLanguage('pt-BR'); // Fallback default
+              }
+         } else {
+             setLanguage('pt-BR'); // Ultimate fallback
+         }
+     }
+
+
+    // --- Lógica Principal de Conversão (adaptada para usar i18n) ---
+
+    function setStatus(key, type = 'info', params = {}) {
+        const message = getStatusMessage(key, params);
+        statusDiv.textContent = message;
+        const typeMap = {
+            info: 'status-info', success: 'status-success',
+            error: 'status-error', warning: 'status-warning'
+        };
+        statusDiv.className = typeMap[type] || 'status-info';
+        statusDiv.style.display = 'block';
+    }
+
+    async function handleConversion() {
+        const file = inputFile.files[0];
+        const outputFormat = outputFormatSelect.value;
+
+        if (!file) {
+            setStatus('statusSelectFile', 'error');
+            return;
+        }
+
+        setStatus('statusReading', 'info');
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+
+        try {
+            let workbook;
+            let jsonData;
+
+            if (fileExtension === 'yaml' || fileExtension === 'yml') {
+                const text = await readFileAsText(file);
+                setStatus('statusProcessingYAML', 'info');
+                const data = jsyaml.load(text);
+                if (!Array.isArray(data)) throw new Error(getStatusMessage('statusErrorYAMLStructure'));
+                jsonData = data; // Assume it's already in a usable array format
+                 // Convert to SheetJS internal structure (needed for consistent output handling)
+                 if (data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0])) {
+                    workbook = { Sheets: { Sheet1: XLSX.utils.json_to_sheet(jsonData) }, SheetNames: ['Sheet1'] };
+                 } else {
+                     workbook = { Sheets: { Sheet1: XLSX.utils.aoa_to_sheet(jsonData) }, SheetNames: ['Sheet1'] };
+                 }
+            } else if (fileExtension === 'json') {
+                 const text = await readFileAsText(file);
+                 setStatus('statusProcessingJSON', 'info');
+                 const data = JSON.parse(text);
+                 if (!Array.isArray(data)) throw new Error(getStatusMessage('statusErrorJSONStructure'));
+                 jsonData = data;
+                  // Convert to SheetJS internal structure
+                  if (data.length > 0 && typeof data[0] === 'object' && !Array.isArray(data[0])) {
+                     workbook = { Sheets: { Sheet1: XLSX.utils.json_to_sheet(jsonData) }, SheetNames: ['Sheet1'] };
+                  } else {
+                      workbook = { Sheets: { Sheet1: XLSX.utils.aoa_to_sheet(jsonData) }, SheetNames: ['Sheet1'] };
+                  }
+            } else if (fileExtension === 'xml') {
+                 setStatus('statusReadingXML', 'info');
+                 try {
+                    const data = await readFileAsArrayBuffer(file);
+                     workbook = XLSX.read(data, { type: 'array' });
+                      const firstSheetName = workbook.SheetNames[0];
+                      if (!firstSheetName) throw new Error(getStatusMessage('statusErrorXMLTable'));
+                      const worksheet = workbook.Sheets[firstSheetName];
+                      jsonData = XLSX.utils.sheet_to_json(worksheet);
+                      if(!jsonData || jsonData.length === 0) jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                 } catch (xmlError) {
+                      console.warn("XML read via SheetJS failed, trying basic DOM parsing (very limited)", xmlError);
+                       try {
+                         const text = await readFileAsText(file);
+                         const parser = new DOMParser();
+                         const xmlDoc = parser.parseFromString(text, "application/xml");
+                          // Check for parser errors
+                          const parserError = xmlDoc.querySelector('parsererror');
+                          if (parserError) throw new Error(`XML Parsing Error: ${parserError.textContent}`);
+
+                         const rows = Array.from(xmlDoc.documentElement.children);
+                         if (!rows.length || !rows[0] || rows[0].children.length === 0) throw new Error(getStatusMessage('statusErrorXMLTableSimple'));
+
+                         const headers = Array.from(rows[0].children).map(cell => cell.tagName);
+                         jsonData = rows.map(row => {
+                             const obj = {};
+                             Array.from(row.children).forEach((cell, i) => {
+                                  // Use header name if available and valid, otherwise use generic name
+                                  const headerName = headers[i] || `col_${i}`;
+                                 obj[headerName] = cell.textContent;
+                             });
+                             return obj;
+                         });
+                          workbook = { Sheets: { Sheet1: XLSX.utils.json_to_sheet(jsonData) }, SheetNames: ['Sheet1'] };
+                           setStatus("statusXMLReadDOM", "warning");
+                       } catch(domError) {
+                             console.error("DOM Parsing Error:", domError);
+                             throw new Error(getStatusMessage('statusErrorXMLProcess', {subMessage: domError.message}));
+                       }
+                 }
+            } else {
+                setStatus('statusProcessingGeneric', 'info', { format: fileExtension.toUpperCase() });
+                const data = await readFileAsArrayBuffer(file);
+                workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            }
+
+            // --- Extract data into JS format if not already done ---
+            if (!jsonData) {
+                const firstSheetName = workbook.SheetNames[0];
+                if (!firstSheetName) throw new Error(getStatusMessage('statusErrorNoSheet'));
+                const worksheet = workbook.Sheets[firstSheetName];
+                jsonData = XLSX.utils.sheet_to_json(worksheet);
+                if (!jsonData || jsonData.length === 0) {
+                    jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    if (!jsonData || jsonData.length === 0) throw new Error(getStatusMessage('statusErrorSheetEmpty'));
+                }
+            }
+
+            // --- Generate Output File ---
+             handleOutput(jsonData, outputFormat, file.name);
+
+        } catch (error) {
+            console.error('Processing Error:', error);
+            // Use a generic error status key and pass the specific message
+             setStatus('statusErrorGeneric', 'error', { message: error.message });
+        }
+    }
+
+     // --- Helper functions for reading files (return Promises) ---
+     function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+             reader.onerror = (e) => reject(new Error(getStatusMessage('statusErrorReadText')));
+            reader.readAsText(file);
+        });
+    }
+
+     function readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+             reader.onerror = (e) => reject(new Error(getStatusMessage('statusErrorReadBuffer')));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // --- Generate and Download Output File ---
+    function handleOutput(data, format, inputFileName) {
+         setStatus('statusConvertingTo', 'info', { format: format.toUpperCase() });
+        let outputData;
+        let outputMimeType;
+        let outputExtension;
+        const baseName = inputFileName.split('.').slice(0, -1).join('.') || inputFileName + "_converted";
+         const isArrayOfArrays = Array.isArray(data) && data.length > 0 && Array.isArray(data[0]);
+         let worksheet;
+
+         try {
+            if (isArrayOfArrays) worksheet = XLSX.utils.aoa_to_sheet(data);
+            else worksheet = XLSX.utils.json_to_sheet(data);
+         } catch(e) {
+             throw new Error(getStatusMessage('statusErrorPrepareData', { message: e.message }));
+         }
+
+        try {
+             const wb = XLSX.utils.book_new();
+             XLSX.utils.book_append_sheet(wb, worksheet, 'Data'); // Sheet name 'Data'
+
+            switch (format) {
+                case 'csv':
+                    outputData = XLSX.utils.sheet_to_csv(worksheet);
+                    outputMimeType = 'text/csv;charset=utf-8;';
+                    outputExtension = 'csv';
+                    break;
+                case 'xlsx':
+                    outputData = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                    outputMimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                    outputExtension = 'xlsx';
+                    break;
+                 case 'json':
+                     const jsonDataOutput = isArrayOfArrays ? XLSX.utils.sheet_to_json(worksheet) : data;
+                    outputData = JSON.stringify(jsonDataOutput, null, 2);
+                    outputMimeType = 'application/json;charset=utf-8;';
+                    outputExtension = 'json';
+                    break;
+                case 'ods':
+                     outputData = XLSX.write(wb, { bookType: 'ods', type: 'array' });
+                     outputMimeType = 'application/vnd.oasis.opendocument.spreadsheet';
+                     outputExtension = 'ods';
+                     break;
+                 case 'html':
+                     const htmlString = XLSX.utils.sheet_to_html(worksheet);
+                     outputData = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${baseName}</title><style>table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; } th { background-color: #f2f2f2; }</style></head><body>${htmlString}</body></html>`;
+                     outputMimeType = 'text/html;charset=utf-8;';
+                     outputExtension = 'html';
+                     break;
+                 case 'tsv':
+                     outputData = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+                     outputMimeType = 'text/tab-separated-values;charset=utf-8;';
+                     outputExtension = 'tsv';
+                     break;
+                 case 'xml':
+                     const xmlJsonData = isArrayOfArrays ? XLSX.utils.sheet_to_json(worksheet) : data;
+                     let xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
+                     xmlJsonData.forEach(row => {
+                         xmlString += '  <row>\n';
+                         for (const key in row) {
+                             if (Object.hasOwnProperty.call(row, key)) {
+                                 const escapedKey = key.replace(/[^a-zA-Z0-9_.:-]/g, '_').replace(/^[^a-zA-Z_:]/, '_'); // XML tag name rules
+                                 const escapedValue = String(row[key]).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+                                 xmlString += `    <${escapedKey}>${escapedValue}</${escapedKey}>\n`;
+                             }
+                         }
+                         xmlString += '  </row>\n';
+                     });
+                     xmlString += '</root>';
+                     outputData = xmlString;
+                     outputMimeType = 'application/xml;charset=utf-8;';
+                     outputExtension = 'xml';
+                     break;
+                 case 'yaml':
+                     const yamlJsonData = isArrayOfArrays ? XLSX.utils.sheet_to_json(worksheet) : data;
+                     outputData = jsyaml.dump(yamlJsonData, { indent: 2 });
+                     outputMimeType = 'text/yaml;charset=utf-8;';
+                     outputExtension = 'yaml';
+                     break;
+                 case 'slk':
+                     outputData = XLSX.write(wb, { bookType: 'slk', type: 'string' });
+                     outputMimeType = 'text/plain;charset=utf-8;';
+                     outputExtension = 'slk';
+                     break;
+                default:
+                     throw new Error(getStatusMessage('statusErrorOutputFormat', { format: format }));
+            }
+
+            triggerDownload(outputData, `${baseName}.${outputExtension}`, outputMimeType);
+             setStatus('statusComplete', 'success', { format: outputExtension.toUpperCase() });
+
+        } catch (error) {
+            console.error('Output Generation Error:', error);
+             throw new Error(getStatusMessage('statusErrorOutputConversion', { format: format.toUpperCase(), message: error.message }));
+        }
+    }
+
+    // --- Trigger Download ---
+    function triggerDownload(data, filename, mimeType) {
+        const blob = new Blob([data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link); // Append required for Firefox
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+     // --- Inicializa o idioma quando o DOM estiver pronto ---
+     document.addEventListener('DOMContentLoaded', initializeLanguage);
+
+</script>
+
+</body>
+</html>
